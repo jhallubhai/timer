@@ -13,8 +13,8 @@ else
     echo "📁 Tracker directory already exists."
 fi
 
-# 2. Create JSON files if not exists
-declare -a files=("first_start.json" "current_session.json" "minute_runtime.json" "session_logs.json" "total_runtime.json" "debug.log")
+# 2. Create JSON/log files (first_start.json will be handled by session_init.py)
+declare -a files=("current_session.json" "minute_runtime.json" "session_logs.json" "total_runtime.json" "debug.log")
 
 for file in "${files[@]}"
 do
@@ -31,19 +31,43 @@ do
     fi
 done
 
-# 3. Install dependencies (optional if using Codespaces with Python pre-installed)
+# 3. Install dependencies (if not already)
 echo "📦 Checking Python and pip..."
 python3 --version >/dev/null 2>&1 || { echo "❌ Python3 not found!"; exit 1; }
 pip3 --version >/dev/null 2>&1 || { echo "❌ pip3 not found!"; exit 1; }
 
-# 4. Call start_all.sh to launch background scripts
-if [ -f "start_all.sh" ]; then
-    echo "🚀 Starting all background trackers via start_all.sh..."
-    bash start_all.sh
-else
-    echo "❌ start_all.sh not found!"
-    exit 1
-fi
+# 4. Initialize first_start.json and current_session.json via session_init.py
+echo "⚙️ Initializing session with session_init.py..."
+python3 session_init.py
+
+# 5. Create runtime loop scripts if not exist
+echo "🛠️ Setting up runtime loops..."
+
+cat <<EOF > runtime_loop.sh
+#!/bin/bash
+while true
+do
+    echo "🔁 Running runtime.py at \$(date)" >> runtime.log
+    python3 runtime.py >> runtime.log 2>&1
+    sleep 1200
+done
+EOF
+
+cat <<EOF > totalruntime_loop.sh
+#!/bin/bash
+while true
+do
+    echo "📊 Running totalruntime.py at \$(date)" >> totalruntime.log
+    python3 totalruntime.py >> totalruntime.log 2>&1
+    sleep 1500
+done
+EOF
+
+chmod +x runtime_loop.sh totalruntime_loop.sh
+
+# 6. Launch background trackers
+echo "🚀 Starting all background trackers via start_all.sh..."
+bash start_all.sh
 
 echo ""
 echo "✅ Codespace Tracker setup complete!"
