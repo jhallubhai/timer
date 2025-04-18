@@ -31,10 +31,28 @@ do
     fi
 done
 
-# 3. Install dependencies (if not already)
-echo "📦 Checking Python and pip..."
+# Check for Python 3
 python3 --version >/dev/null 2>&1 || { echo "❌ Python3 not found!"; exit 1; }
-pip3 --version >/dev/null 2>&1 || { echo "❌ pip3 not found!"; exit 1; }
+
+# Check for pip3
+if ! command -v pip3 >/dev/null 2>&1; then
+    echo "⚠️ pip3 not found. Attempting to install..."
+    
+    # Update package list
+    sudo apt update
+
+    # Install pip3 (Debian/Ubuntu)
+    sudo apt install -y python3-pip || { echo "❌ Failed to install pip3!"; exit 1; }
+
+    echo "✅ pip3 installed successfully."
+else
+    echo "✅ pip3 is already installed."
+fi
+
+# Install or upgrade dependencies
+echo "📦 Installing/upgrading dependencies from requirements.txt..."
+pip3 install --upgrade -r requirements.txt
+
 
 # 4. Initialize first_start.json and current_session.json via session_init.py
 echo "⚙️ Initializing session with session_init.py..."
