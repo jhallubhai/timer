@@ -9,13 +9,19 @@ SESSION_LOGS_FILE = os.path.join(TRACKER_DIR, "session_logs.json")
 
 def read_json(path):
     if os.path.exists(path):
-        with open(path) as f:
-            return json.load(f)
+        try:
+            with open(path) as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"❌ Error reading {path}: {e}")
     return {}
 
 def write_json(path, data):
-    with open(path, "w") as f:
-        json.dump(data, f, indent=4)
+    try:
+        with open(path, "w") as f:
+            json.dump(data, f, indent=4)
+    except Exception as e:
+        print(f"❌ Error writing to {path}: {e}")
 
 def get_now():
     return datetime.utcnow().isoformat()
@@ -25,11 +31,16 @@ def update_session_logs():
     minute_runtime = read_json(MINUTE_RUNTIME_FILE)
     logs = read_json(SESSION_LOGS_FILE)
 
-    # Validate data
+    # Validate session + runtime data
     if "start_time" not in current_session or "minutes" not in minute_runtime:
         print("❌ Required data missing. Skipping session log update.")
         return
 
+    # Ensure logs is a list
+    if not isinstance(logs, list):
+        logs = []
+
+    # Prepare log entry
     start_time = current_session["start_time"]
     end_time = get_now()
     minutes = minute_runtime["minutes"]
