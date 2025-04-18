@@ -1,5 +1,6 @@
 import os
 from datetime import datetime
+import hashlib
 from utils import read_json, write_json, ensure_tracker_dir, append_log
 
 # Constants
@@ -10,7 +11,14 @@ CURRENT_SESSION_FILE = os.path.join(TRACKER_DIR, "current_session.json")
 # Ensure directory exists
 ensure_tracker_dir()
 
-now = datetime.now().isoformat()
+now = datetime.utcnow().isoformat()
+
+# --- Session ID Generator ---
+def generate_session_id(timestamp):
+    session_hash = hashlib.sha256(timestamp.encode()).hexdigest()[:8]
+    return f"{timestamp}_{session_hash}"
+
+session_id = generate_session_id(now)
 
 # --- Handle first_start.json ---
 first_start_data = read_json(FIRST_START_FILE)
@@ -26,9 +34,10 @@ else:
 # --- Handle current_session.json ---
 print("🔁 Initializing current_session.json...")
 session_data = {
+    "session_id": session_id,
     "start_time": now,
     "last_updated": now,
     "minutes": 0
 }
 write_json(CURRENT_SESSION_FILE, session_data)
-append_log("✅ current_session.json initialized.")
+append_log(f"✅ current_session.json initialized with session_id: {session_id}")

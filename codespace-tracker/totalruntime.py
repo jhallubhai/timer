@@ -1,6 +1,7 @@
 import os
 import json
 from datetime import datetime
+from dateutil import parser
 
 TRACKER_DIR = os.path.join(os.getcwd(), ".codespace-tracker")
 SESSION_LOGS_FILE = os.path.join(TRACKER_DIR, "session_logs.json")
@@ -29,22 +30,39 @@ def get_now():
 def calculate_total_runtime():
     logs = read_json(SESSION_LOGS_FILE)
 
-    # Sanity check: ensure logs is a list
     if not isinstance(logs, list):
         print("⚠️ session_logs.json is not a list. Resetting to empty list.")
         logs = []
 
-    total_minutes = sum(session.get("duration_minutes", 0) for session in logs)
+    valid_sessions = []
+    total_minutes = 0
+
+    for session in logs:
+        try:
+            duration = session.get("duration_minutes")
+            # Double-check if duration is valid
+            if duration is None and "start_time" in session and "end_time" in session:
+                start = parser.isoparse(session["start_time"])
+                end = parser.isoparse(session["end_time"])
+                duration = int((end - start).total_seconds() // 60)
+
+            if duration:
+                total_minutes += duration
+                valid_sessions.append(session)
+        except Exception as e:
+            print(f"⚠️ Skipped one corrupted session: {e}")
+
     total_hours = round(total_minutes / 60, 2)
 
     stats = {
         "total_minutes": total_minutes,
         "total_hours": total_hours,
+        "session_count": len(valid_sessions),
         "last_updated": get_now()
     }
 
     write_json(TOTAL_RUNTIME_FILE, stats)
-    print(f"🔄 Total runtime updated: {total_minutes} minutes ({total_hours} hours)")
+    print(f"🔄 Total runtime updated: {total_minutes} minutes ({total_hours} hours) across {len(valid_sessions)} sessions.")
 
 def main():
     calculate_total_runtime()
