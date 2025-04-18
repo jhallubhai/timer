@@ -37,6 +37,7 @@ def calculate_total_runtime():
     valid_sessions = []
     total_minutes = 0
 
+    # Calculate total runtime by summing valid session durations
     for session in logs:
         try:
             duration = session.get("duration_minutes")
@@ -54,6 +55,7 @@ def calculate_total_runtime():
 
     total_hours = round(total_minutes / 60, 2)
 
+    # Prepare stats for updating total_runtime.json
     stats = {
         "total_minutes": total_minutes,
         "total_hours": total_hours,
@@ -61,6 +63,7 @@ def calculate_total_runtime():
         "last_updated": get_now()
     }
 
+    # Update the total runtime JSON
     write_json(TOTAL_RUNTIME_FILE, stats)
     print(f"🔄 Total runtime updated: {total_minutes} minutes ({total_hours} hours) across {len(valid_sessions)} sessions.")
 

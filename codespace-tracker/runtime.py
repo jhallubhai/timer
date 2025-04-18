@@ -32,32 +32,44 @@ def update_session_logs():
     current_session = read_json(CURRENT_SESSION_FILE)
     logs = read_json(SESSION_LOGS_FILE)
 
-    # Validation
-    if "start_time" not in current_session:
-        print("❌ start_time missing in current_session.json")
+    if "start_time" not in current_session or "session_id" not in current_session:
+        print("❌ Missing session_id or start_time in current_session.json")
         return
 
-    session_id = current_session.get("session_id", "unknown")
+    session_id = current_session["session_id"]
     start_time = current_session["start_time"]
     end_time = datetime.utcnow().isoformat()
     duration_minutes = calculate_duration_minutes(start_time, end_time)
 
+    # Ensure logs is a list
     if not isinstance(logs, list):
         logs = []
 
-    log_entry = {
-        "session_id": session_id,
-        "start_time": start_time,
-        "end_time": end_time,
-        "duration_minutes": duration_minutes,
-        "recovered": False,
-        "date": datetime.utcnow().date().isoformat()
-    }
+    # Check if session_id already exists
+    updated = False
+    for entry in logs:
+        if entry.get("session_id") == session_id and not entry.get("recovered", False):
+            entry["end_time"] = end_time
+            entry["duration_minutes"] = duration_minutes
+            entry["date"] = datetime.utcnow().date().isoformat()
+            updated = True
+            break
 
-    logs.append(log_entry)
+    # If not found, append new entry
+    if not updated:
+        log_entry = {
+            "session_id": session_id,
+            "start_time": start_time,
+            "end_time": end_time,
+            "duration_minutes": duration_minutes,
+            "recovered": False,
+            "date": datetime.utcnow().date().isoformat()
+        }
+        logs.append(log_entry)
+        print("🆕 New session entry added.")
+
     write_json(SESSION_LOGS_FILE, logs)
-
-    print(f"📦 Session logged: {duration_minutes} mins | ID: {session_id} | From {start_time} to {end_time}")
+    print(f"✅ Session log updated: {duration_minutes} mins | ID: {session_id}")
 
 def main():
     update_session_logs()

@@ -7,6 +7,7 @@ from utils import read_json, write_json, ensure_tracker_dir, append_log
 TRACKER_DIR = os.path.join(os.getcwd(), ".codespace-tracker")
 FIRST_START_FILE = os.path.join(TRACKER_DIR, "first_start.json")
 CURRENT_SESSION_FILE = os.path.join(TRACKER_DIR, "current_session.json")
+MINUTE_RUNTIME_FILE = os.path.join(TRACKER_DIR, "minute_runtime.json")  # ✅ Added this
 
 # Ensure directory exists
 ensure_tracker_dir()
@@ -41,3 +42,7 @@ session_data = {
 }
 write_json(CURRENT_SESSION_FILE, session_data)
 append_log(f"✅ current_session.json initialized with session_id: {session_id}")
+
+# --- ✅ Reset minute_runtime.json ---
+write_json(MINUTE_RUNTIME_FILE, {"minutes": 0})
+append_log("🔄 minute_runtime.json reset to 0.")
