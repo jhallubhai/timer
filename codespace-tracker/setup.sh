@@ -59,27 +59,6 @@ echo "⚙️ Initializing session with session_init.py..."
 python3 session_init.py
 
 # 5. Create runtime loop scripts if not exist
-echo "🛠️ Setting up runtime loops..."
-
-cat <<EOF > runtime_loop.sh
-#!/bin/bash
-while true
-do
-    echo "🔁 Running runtime.py at \$(date)" >> runtime.log
-    python3 runtime.py >> runtime.log 2>&1
-    sleep 1200
-done
-EOF
-
-cat <<EOF > totalruntime_loop.sh
-#!/bin/bash
-while true
-do
-    echo "📊 Running totalruntime.py at \$(date)" >> totalruntime.log
-    python3 totalruntime.py >> totalruntime.log 2>&1
-    sleep 1500
-done
-EOF
 
 chmod +x runtime_loop.sh totalruntime_loop.sh
 
