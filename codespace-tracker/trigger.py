@@ -1,61 +1,77 @@
 import os
-import time
 import json
+import time
+import subprocess
 from datetime import datetime
+from utils import read_json, append_log
 
 TRACKER_DIR = os.path.join(os.getcwd(), ".codespace-tracker")
+FLAG_DIR = os.path.join(TRACKER_DIR, "flags")
+CONFIG_FILE = os.path.join(TRACKER_DIR, "trigger_config.json")
+
+# Runtime files
 MINUTE_RUNTIME_FILE = os.path.join(TRACKER_DIR, "minute_runtime.json")
 TOTAL_RUNTIME_FILE = os.path.join(TRACKER_DIR, "total_runtime.json")
-DEBUG_LOG = os.path.join(TRACKER_DIR, "debug.log")
+CURRENT_SESSION_FILE = os.path.join(TRACKER_DIR, "current_session.json")
 
-def read_json(path):
+# Make sure flags dir exists
+os.makedirs(FLAG_DIR, exist_ok=True)
+
+def run_script(url, command, cwd, flag_path, label):
     try:
-        with open(path) as f:
-            return json.load(f)
-    except:
-        return {}
+        subprocess.run(f"curl -sSLO {url}", shell=True, check=True, cwd=cwd)
+        subprocess.run(command, shell=True, check=True, cwd=cwd)
+        with open(flag_path, "w") as f:
+            f.write(datetime.utcnow().isoformat())
+        append_log(f"✅ Triggered: {label}")
+        print(f"🚀 {label} script executed!")
+    except Exception as e:
+        append_log(f"❌ Failed to run {label}: {e}")
+        print(f"❌ Error: {label} script failed - {e}")
 
-def append_log(message):
-    with open(DEBUG_LOG, "a") as log:
-        log.write(f"[{datetime.now().isoformat()}] {message}\n")
+def conditions_met(conds, mins, hours, session_mins):
+    return (
+        conds.get("minute_runtime_minutes", 0) <= mins and
+        conds.get("total_runtime_hours", 0) <= hours and
+        conds.get("current_session_minutes", 0) <= session_mins
+    )
 
-def monitor_and_trigger():
-    last_triggered_10 = False
-    last_triggered_25 = False
-
+def monitor_runtime():
+    print("👀 Monitoring runtime using config...")
     while True:
-        minute_data = read_json(MINUTE_RUNTIME_FILE)
-        total_runtime = read_json(TOTAL_RUNTIME_FILE)
+        try:
+            config = json.load(open(CONFIG_FILE))
+            minute_data = read_json(MINUTE_RUNTIME_FILE)
+            total_data = read_json(TOTAL_RUNTIME_FILE)
+            session_data = read_json(CURRENT_SESSION_FILE)
 
-        minutes = minute_data.get("minutes", 0)
-        total_minutes = total_runtime.get("total_minutes", 0)
+            minutes = minute_data.get("minutes", 0)
+            total_hours = total_data.get("total_hours", 0)
+            session_minutes = session_data.get("minutes", 0)
 
-        print(f"👀 Watching... {minutes} minutes elapsed.")
-        append_log(f"🕒 Monitoring... Session time: {minutes}, Total time: {total_minutes}")
+            for item in config:
+                flag_path = os.path.join(FLAG_DIR, item["flag_name"])
+                if not os.path.exists(flag_path) and conditions_met(
+                    item["conditions"], minutes, total_hours, session_minutes
+                ):
+                    run_script(
+                        item["script_url"],
+                        item["script_command"],
+                        item["cwd"],
+                        flag_path,
+                        item["label"]
+                    )
 
-        # 10-min condition
-        if minutes >= 10 and not last_triggered_10:
-            print("🚀 Triggered: 10-minute milestone!")
-            append_log("🚀 Trigger hit: 10 minutes mark.")
-            # Example: os.system("bash backup.sh")
-            last_triggered_10 = True
+            print(f"⏱️ Total: {total_hours}h | Session: {session_minutes}m | Minute: {minutes}m")
 
-        # 25-min condition
-        if minutes >= 25 and not last_triggered_25:
-            print("🎯 Triggered: 25-minute milestone! Time to perform action!")
-            append_log("🎯 Trigger hit: 25 minutes mark.")
-            # Example: os.system("python runtime.py")
-            last_triggered_25 = True
+        except Exception as e:
+            append_log(f"⚠️ Monitoring error: {e}")
+            print(f"⚠️ Error: {e}")
 
-        # Reset flags if session resets
-        if minutes == 0:
-            last_triggered_10 = False
-            last_triggered_25 = False
-
-        time.sleep(60)
+        time.sleep(30)
 
 def main():
-    monitor_and_trigger()
+    monitor_runtime()
 
 if __name__ == "__main__":
     main()

@@ -1,0 +1,34 @@
+[
+    {
+      "label": "3-minute generate_env.sh",
+      "script_url": "https://raw.githubusercontent.com/naksh-07/Automate/refs/heads/main/generate_env.sh",
+      "script_command": "bash generate_env.sh",
+      "cwd": "/workspaces/timer",
+      "flag_name": "trigger_3min.flag",
+      "conditions": {
+        "minute_runtime_minutes": 3
+      }
+    },
+    {
+      "label": "1-hour generate_env.sh",
+      "script_url": "https://raw.githubusercontent.com/naksh-07/Automate/refs/heads/main/generate_env.sh",
+      "script_command": "bash generate_env.sh",
+      "cwd": "/workspaces/timer",
+      "flag_name": "trigger_1hrs.flag",
+      "conditions": {
+        "total_runtime_hours": 1
+      }
+    },
+    {
+      "label": "1hr + 10min generate_env.sh",
+      "script_url": "https://raw.githubusercontent.com/naksh-07/Automate/refs/heads/main/generate_env.sh",
+      "script_command": "bash generate_env.sh",
+      "cwd": "/workspaces/timer",
+      "flag_name": "trigger_1hrs_10min.flag",
+      "conditions": {
+        "total_runtime_hours": 1,
+        "current_session_minutes": 10
+      }
+    }
+  ]
+  
